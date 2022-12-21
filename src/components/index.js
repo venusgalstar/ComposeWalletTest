@@ -8,14 +8,18 @@ const web3Modal = web3ModalSetup();
 // console.log("web3Modal: ", web3Modal);
 
 const Interface = () => {
-    const contractAddress = '0x7412441Ab9Bd26aEF0Fe28f8E0bf88bFfa5Fa587';
+    const contractAddress = '0x5f06CA6b6115B39dC28858935d52eb31752F5394';
     let isMobile = window.matchMedia("only screen and (max-width: 1000px)").matches;
 
     const interactAddress = "http://localhost:9000";
 
     const [networkList, setNetworkList] = useState();
     const [nftList, setNFTList] = useState();
-    const [Abi, setAbi] = useState();
+    const [Abi, setAbi] = useState();    
+    const [current, setCurrent] = useState(null);
+    const [receipt, setReceipt] = useState();
+    const [nftID, setNftID] = useState();
+
     const [tokenAbi, setTokenAbi] = useState();
     const [web3, setWeb3] = useState();
     const [isConnected, setIsConnected] = useState(false);
@@ -23,7 +27,6 @@ const Interface = () => {
     const [refetch, setRefetch] = useState(true);
     const [errorMessage, setErrorMessage] = useState(null);
     const [accounts, setAccounts] = useState(null);
-    const [current, setCurrent] = useState(null);
     const [connButtonText, setConnButtonText] = useState("CONNECT");
     const [refLink, setRefLink] = useState(
         "https://mangominer.finance/?ref=0x0000000000000000000000000000000000000000"
@@ -59,7 +62,7 @@ const Interface = () => {
       const getData = async () => {
         var data = await axios.get(interactAddress + "/getChainList");
 
-        console.log("data: ", data.data);
+        console.log("getChainList: ", data.data);
 
         setNetworkList(data.data);
       }
@@ -74,6 +77,8 @@ const Interface = () => {
     useEffect(()=>{
       const getData1 = async () => {
         var data = await axios.get(interactAddress + "/getNftList");
+
+        console.log("getNftList: ", data.data);
         
         setNFTList(data.data);
       }
@@ -149,77 +154,6 @@ const Interface = () => {
     }, []);    
 
     useEffect(() => {
-      const Contract = async () => {
-        if (isConnected && Abi) {
-          // console.log(current);
-
-          // let userBalance = await web3.eth.getBalance(current);
-          let userBalance = await tokenAbi.methods.balanceOf(current).call();
-          setUserBalance(userBalance);
-
-          let approvedAmount = await tokenAbi.methods.allowance(current, contractAddress).call();
-          // console.log("approvedAmount: ", approvedAmount);
-          setUserApprovedAmount(approvedAmount);
-
-          let userInvestment = await Abi.methods.investments(current).call();
-          setUserInvestment(userInvestment.invested / 10e17);
-
-          let dailyRoi = await Abi.methods.DailyRoi(userInvestment.invested).call();
-          setUserDailyRoi(dailyRoi / 10e17);
-
-          let dailyReward = await Abi.methods.userReward(current).call();
-          setDailyReward(dailyReward / 10e17);
-        }
-
-        // let owner = await Abi.methods.owner().call();
-
-        // console.log('Owner: ', owner);
-      };
-  
-      Contract();
-      // eslint-disable-next-line
-    }, [refetch]);
-
-    useEffect(() => {
-      const Withdrawlconsole = async () => {
-        if(isConnected && Abi) {
-        let approvedWithdraw = await Abi.methods.approvedWithdrawal(current).call();
-        setApprovedWithdraw(approvedWithdraw.amount / 10e17);
-
-        let totalWithdraw = await Abi.methods.totalWithdraw(current).call();
-        setTotalWithdraw(totalWithdraw.amount / 10e17);
-      }
-      }
-      Withdrawlconsole();
-      // eslint-disable-next-line
-    },[refetch]);
-
-    useEffect(() => {
-      const TimeLine = async () => {
-        if(isConnected && Abi) {
-        let claimTime = await Abi.methods.claimTime(current).call();
-        if(claimTime.startTime > 0) {
-        let _claimStart = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}).format(claimTime.startTime + "000");
-        let _claimEnd = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}).format(claimTime.deadline + "000");
-        setClaimStartTime(_claimStart);
-
-        setClaimDeadline(_claimEnd);
-
-        let weekly = await Abi.methods.weekly(current).call();
-        let _start = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}).format(weekly.startTime + "000");
-        let _end = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}).format(weekly.deadline + "000");
-
-        setLastWithdraw(_start);
-        setNextWithdraw(_end);
-      }
-      }
-      }
-      TimeLine();
-      // eslint-disable-next-line
-    },[refetch]);
-
-
-    useEffect(() => {
       const ContractReward = async () => {
         if (isConnected && Abi) {
       
@@ -244,15 +178,18 @@ const Interface = () => {
     };
       
     // buttons
-    const ClaimNow = async (e) => {
+    const TransferNow = async (e) => {
+      
+      console.log("TransferNow", isConnected, Abi);
+
       e.preventDefault();
       if (isConnected && Abi) {
-        //  console.log("success")
-          setPendingMessage("Claiming Funds")
-        await Abi.methods.claimDailyRewards().send({
-          from: current,
-        });
-        setPendingMessage("Claimed Successfully");
+          //  console.log("success")
+          setPendingMessage("Transferring NFT")
+          await Abi.methods.transferFrom(current, receipt, nftID).send({
+            from: current,
+          });
+          setPendingMessage("Transmission Successfully");
         
       } else {
         // console.log("connect wallet");
@@ -336,8 +273,8 @@ return(
                             type="text"
                             placeholder="0x00000000000000000000000000000000"
                             className="form-control input-box"
-                            value={calculate}
-                            onChange={(e) => setCalculator(e.target.value)}
+                            value={receipt}
+                            onChange={(e) => setReceipt(e.target.value)}
                           />
                         </h6>
                       </td>
@@ -350,15 +287,15 @@ return(
                             type="number"
                             placeholder="0"
                             className="form-control input-box"
-                            value={calculate}
-                            onChange={(e) => setCalculator(e.target.value)}
+                            value={nftID}
+                            onChange={(e) => setNftID(e.target.value)}
                           />
                         </h6>
                       </td>                                            
                     </tr>
                     <tr>                      
                       <td style={{textAlign:"center"}}>
-                        <button className="btn btn-primary btn-lg btn-custom" onClick={ClaimNow}>CLAIM</button>
+                        <button className="btn btn-primary btn-lg btn-custom" onClick={TransferNow}>Transfer</button>
                       </td>
                     </tr>
                   </tbody>
