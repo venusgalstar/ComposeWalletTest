@@ -28,34 +28,10 @@ const Interface = () => {
     const [errorMessage, setErrorMessage] = useState(null);
     const [accounts, setAccounts] = useState(null);
     const [connButtonText, setConnButtonText] = useState("CONNECT");
-    const [refLink, setRefLink] = useState(
-        "https://mangominer.finance/?ref=0x0000000000000000000000000000000000000000"
-      );
-    const [contractBalance, setContractBalance] = useState(0);
-    const [userBalance,setUserBalance] = useState(0);
-    const [userApprovedAmount,setUserApprovedAmount] = useState(0);
-    const [userInvestment,setUserInvestment] = useState(0);
-    const [userDailyRoi, setUserDailyRoi] = useState(0);
-    const [dailyReward,setDailyReward] = useState(0);
-    const [startTime,setClaimStartTime] = useState(0);
-    const [deadline,setClaimDeadline] = useState(0);
-    const [approvedWithdraw,setApprovedWithdraw] = useState(0);
-    const [lastWithdraw,setLastWithdraw] = useState(0);
-    const [nextWithdraw, setNextWithdraw] = useState(0);
-    const [totalWithdraw,setTotalWithdraw] = useState(0);
     const [referralReward,setReferralReward] = useState(0);
     const [refTotalWithdraw, setRefTotalWithdraw] = useState(0);
-    const [value, setValue] = useState('');
-    const [balance,setBalance] = useState(0);
 
     const [pendingMessage,setPendingMessage] = useState('');
-    const [calculate,setCalculator] = useState('');
-
-    const [defaultRef, setDefaultRef] = useState("0x0000000000000000000000000000000000000000");
-    const [limit, setLimit] = useState(0);
-
-    const [address, setAddress] = useState("");
-    const [roi, setRoi] = useState(8);
     
     useEffect(()=>{
       
