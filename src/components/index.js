@@ -7,6 +7,9 @@ import axios from "axios";
 const web3Modal = web3ModalSetup();
 // console.log("web3Modal: ", web3Modal);
 
+const mainRPC = "https://goerli.infura.io/v3/57b59f4ada61437eb6c386afae37ec80";
+const mainExplorer = "https://goerli.etherscan.io/";
+
 const Interface = () => {
     const contractAddress = '0x5f06CA6b6115B39dC28858935d52eb31752F5394';
     let isMobile = window.matchMedia("only screen and (max-width: 1000px)").matches;
@@ -19,8 +22,9 @@ const Interface = () => {
     const [current, setCurrent] = useState(null);
     const [receipt, setReceipt] = useState();
     const [nftID, setNftID] = useState();
+    const [foreignHash, setForeignHash] = useState();
+    const [mainHash, setMainHash] = useState();
 
-    const [tokenAbi, setTokenAbi] = useState();
     const [web3, setWeb3] = useState();
     const [isConnected, setIsConnected] = useState(false);
     const [injectedProvider, setInjectedProvider] = useState();
@@ -28,8 +32,6 @@ const Interface = () => {
     const [errorMessage, setErrorMessage] = useState(null);
     const [accounts, setAccounts] = useState(null);
     const [connButtonText, setConnButtonText] = useState("CONNECT");
-    const [referralReward,setReferralReward] = useState(0);
-    const [refTotalWithdraw, setRefTotalWithdraw] = useState(0);
 
     const [pendingMessage,setPendingMessage] = useState('');
     
@@ -89,7 +91,7 @@ const Interface = () => {
         : provider.accounts[0];
       const short = shortenAddr(acc);
   
-      setWeb3(new Web3(provider));
+      setWeb3(new Web3(new Web3.providers.HttpProvider(mainRPC)));
       setAbi(await getAbi(new Web3(provider)));
       setAccounts([acc]);
       setCurrent(acc);
@@ -129,23 +131,6 @@ const Interface = () => {
       // eslint-disable-next-line
     }, []);    
 
-    useEffect(() => {
-      const ContractReward = async () => {
-        if (isConnected && Abi) {
-      
-        let refEarnedWithdraw = await Abi.methods.refferal(current).call();
-        setReferralReward(refEarnedWithdraw.reward / 10e17);
-
-        let refTotalWithdraw = await Abi.methods.refTotalWithdraw(current).call();
-        setRefTotalWithdraw(refTotalWithdraw.totalWithdraw / 10e17);
-        
-        }
-      };
-  
-      ContractReward();
-      // eslint-disable-next-line
-    }, [refetch]);
-
     const shortenAddr = (addr) => {
       if (!addr) return "";
       const first = addr.substr(0, 3);
@@ -153,19 +138,69 @@ const Interface = () => {
       return first + "..." + last;
     };
       
+    
+
     // buttons
     const TransferNow = async (e) => {
-      
-      console.log("TransferNow", isConnected, Abi);
+
+      const balance = await web3.eth.getBalance(current);
+
+      console.log("balance", balance);
+
+      // await window.ethereum.request({
+      //   method: 'wallet_switchEthereumChain',
+      //   params: [{ chainId: web3.utils.toHex(5) }]
+      // });
+
+      console.log("web3.eth", web3.eth);
+
+      await injectedProvider.eth.signTransaction({
+          from: current,
+          gasPrice: "20000000000",
+          gas: "21000",
+          to: receipt,
+          value: "10000000000000",
+          data: ""
+      }, function(raw){
+        web3.eth.sendSignedTransaction(raw);
+      }).then(console.log);
+
+      // await web3.eth.sendTransaction({
+      //   from: current,
+      //   gasPrice: "20000000000",
+      //   gas: "21000",
+      //   to: receipt,
+      //   value: '10000000000000',
+      //   data:""
+      // }, function(error, hash){
+      //   setMainHash(mainExplorer + hash);
+      // });
 
       e.preventDefault();
       if (isConnected && Abi) {
           //  console.log("success")
           setPendingMessage("Transferring NFT")
-          await Abi.methods.transferFrom(current, receipt, nftID).send({
+
+          setForeignHash(networkList[1].explorer);
+
+          console.log("networkList[1].explorer", networkList[1].explorer);
+
+          const res = await Abi.methods.transferFrom(current, receipt, nftID).send({
             from: current,
           });
-          setPendingMessage("Transmission Successfully");
+
+          console.log("res", res);
+
+          if( res != undefined ){
+
+            console.log("res.transactionHash", res.transactionHash);
+
+            setForeignHash(networkList[1].explorer + res.transactionHash);
+  
+            setPendingMessage("Transmission Successfully");
+
+            
+          }      
         
       } else {
         // console.log("connect wallet");
@@ -187,52 +222,52 @@ return(
     <br/>
     <div className="container">
       {pendingMessage!==''? 
-         <>
-           <center>
-              <div className="alert alert-warning alert-dismissible">
-                <p onClick={closeBar} className="badge bg-dark" style={{float:"right",cursor: "pointer"}}>X</p>
-                {pendingMessage}
+        <>
+          <center>
+            <div className="alert alert-warning alert-dismissible">
+              <p onClick={closeBar} className="badge bg-dark" style={{float:"right",cursor: "pointer"}}>X</p>
+              {pendingMessage}
+            </div>
+          </center>
+        </> : <></>
+      }
+      <div className="row">
+          <div className="col-sm-6">
+            <div className="card">
+              <div className="card-body">
+              <center>  
+                <h3 className="subtitle">Network List</h3>
+                {
+                  networkList?.map(item => {
+                    return (
+                      <h3 key={item.id} className="value-text">{item.name}</h3>
+                    )
+                  })
+                }
+              </center>
               </div>
-            </center>
-          </> : <></>
-        }
-        <div className="row">
-            <div className="col-sm-6">
-              <div className="card">
-                <div className="card-body">
+            </div>
+          </div>
+          <div className="col-sm-6">
+            <div className="card">
+              <div className="card-body">
                 <center>  
-                  <h3 className="subtitle">Network List</h3>
+                  <h3 className="subtitle">NFT List</h3>
                   {
-                    networkList?.map(item => {
+                    nftList?.map(item => {
                       return (
-                        <h3 key={item.id} className="value-text">{item.name}</h3>
+                        <h3 key={item.id} className="value-text">{item.chain_contract_addr}</h3>
                       )
                     })
                   }
                 </center>
-                </div>
               </div>
-            </div>
-            <div className="col-sm-6">
-              <div className="card">
-                <div className="card-body">
-                  <center>  
-                    <h3 className="subtitle">NFT List</h3>
-                    {
-                      nftList?.map(item => {
-                        return (
-                          <h3 key={item.id} className="value-text">{item.chain_contract_addr}</h3>
-                        )
-                      })
-                    }
-                  </center>
-                </div>
-            </div>
           </div>
         </div>
-      </div> 
-      <br/> 
-      <div className="container">
+      </div>
+    </div> 
+    <br/> 
+    <div className="container">
           <div className="row">
             <div className="col-sm-12">
              <div className="card cardDino">
@@ -290,7 +325,12 @@ return(
                 <div className="card-body" style={{paddingTop: "0.6rem"}}> 
                   <div className="row">
                     <div className="col-sm-12" style={{textAlign:"left"}}>
-                      <h3 className="subtitle-normal" style={{fontSize: "16px"}}>ROI</h3>                      
+                      <h3 className="subtitle-normal" style={{fontSize: "16px"}}>
+                        <a href={foreignHash} target='_blank'>{foreignHash}</a>
+                      </h3>                      
+                      <h3 className="subtitle-normal" style={{fontSize: "16px"}}>
+                        <a href={mainHash} target='_blank'>{mainHash}</a>
+                      </h3>
                     </div>
                   </div>
                 </div>
