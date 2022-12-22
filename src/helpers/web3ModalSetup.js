@@ -14,7 +14,7 @@ const web3ModalSetup = () =>
           rpc: {
             // 97: "https://data-seed-prebsc-1-s1.binance.org:8545/", // avax
              56: "https://bsc-dataseed.binance.org",
-             //4002: "https://rpc.testnet.fantom.network/",
+             5: "https://goerli.infura.io/v3/57b59f4ada61437eb6c386afae37ec80",
           },
         },
       },

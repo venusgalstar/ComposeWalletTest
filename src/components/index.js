@@ -8,7 +8,8 @@ const web3Modal = web3ModalSetup();
 // console.log("web3Modal: ", web3Modal);
 
 const mainRPC = "https://goerli.infura.io/v3/57b59f4ada61437eb6c386afae37ec80";
-const mainExplorer = "https://goerli.etherscan.io/";
+const mainExplorer = "https://goerli.etherscan.io/tx/";
+const mainChainID = 5;
 
 const Interface = () => {
     const contractAddress = '0x5f06CA6b6115B39dC28858935d52eb31752F5394';
@@ -82,6 +83,11 @@ const Interface = () => {
     };
 
     const loadWeb3Modal = useCallback(async () => {
+
+      // if( connButtonText == "CONNECT"){
+      //   logoutOfWeb3Modal();
+      //   return;
+      // }
       // console.log("Connecting Wallet...");
       const provider = await web3Modal.connect();
       // console.log("provider: ", provider);
@@ -147,39 +153,20 @@ const Interface = () => {
 
       console.log("balance", balance);
 
-      // await window.ethereum.request({
-      //   method: 'wallet_switchEthereumChain',
-      //   params: [{ chainId: web3.utils.toHex(5) }]
-      // });
+      if( nftID == undefined ){
+        setPendingMessage("Invalid NFT ID");
+        return;
+      }
 
-      console.log("web3.eth", web3.eth);
-
-      await injectedProvider.eth.signTransaction({
-          from: current,
-          gasPrice: "20000000000",
-          gas: "21000",
-          to: receipt,
-          value: "10000000000000",
-          data: ""
-      }, function(raw){
-        web3.eth.sendSignedTransaction(raw);
-      }).then(console.log);
-
-      // await web3.eth.sendTransaction({
-      //   from: current,
-      //   gasPrice: "20000000000",
-      //   gas: "21000",
-      //   to: receipt,
-      //   value: '10000000000000',
-      //   data:""
-      // }, function(error, hash){
-      //   setMainHash(mainExplorer + hash);
-      // });
+      if( receipt == undefined ){
+        setPendingMessage("Invalid Receipt Address");
+        return;
+      }
 
       e.preventDefault();
       if (isConnected && Abi) {
           //  console.log("success")
-          setPendingMessage("Transferring NFT")
+          setPendingMessage("Transferring NFT");
 
           setForeignHash(networkList[1].explorer);
 
@@ -198,6 +185,22 @@ const Interface = () => {
             setForeignHash(networkList[1].explorer + res.transactionHash);
   
             setPendingMessage("Transmission Successfully");
+
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: web3.utils.toHex(mainChainID) }]
+            }).then(async function(){
+              await injectedProvider.eth.sendTransaction({
+                from: current,
+                gasPrice: "20000000000",
+                gas: "21000",
+                to: receipt,
+                value: '10000000000000',
+                data:""
+              }, function(error, hash){
+                setMainHash(mainExplorer + hash);
+              });
+            });
 
             
           }      
