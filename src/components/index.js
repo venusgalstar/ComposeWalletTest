@@ -12,7 +12,7 @@ const mainExplorer = "https://goerli.etherscan.io/tx/";
 const mainChainID = 5;
 
 const Interface = () => {
-    const contractAddress = '0x5f06CA6b6115B39dC28858935d52eb31752F5394';
+    const contractAddress = '0x03E67B129E6Ef71026002f9423b1143129065e26';
     let isMobile = window.matchMedia("only screen and (max-width: 1000px)").matches;
 
     const interactAddress = "http://localhost:9000";
